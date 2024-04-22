@@ -24,7 +24,23 @@ strToPiece: dict = {
 }
 
 pieceToStr: list = ['', 'FD', 'FE', 'LH', 'FB', 'VB', 'BB', 'VE', 'FC', 'VD', 'VC', 'BC', 'LV', 'BD', 'BE']
-pieceToAction: list = ['', 'FD', 'FE', 'LH', 'FB', 'VB', 'BB', 'VE', 'FC', 'VD', 'VC', 'BC', 'LV', 'BD', 'BE']
+pieceToAction    = [
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    [],
+                    ]
 
 class Board:
   """ Internal representation of a PipeMania grid."""
