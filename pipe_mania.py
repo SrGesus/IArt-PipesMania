@@ -65,12 +65,12 @@ class Board:
 
 def goal_tests(m: np.ndarray):
   shifted = m << 1
-  bottom = shifted[1:,].copy()
-  right = shifted[:,1:]
-  bottom ^= m[:-1,]
-  right ^= m[:,:-1]
-  bottom &= 0b1000
-  right &= 0b0010
-  return not np.any(bottom) and not np.any(right)
+  vertical = shifted[:-1,] ^ m[1:,]
+  vertical &= 0b1000
+  if (np.any(vertical)):
+    return False
+  horizontal = shifted[:,:-1] ^ m[:,1:]
+  horizontal &= 0b0010
+  return not np.any(horizontal)
 
   
