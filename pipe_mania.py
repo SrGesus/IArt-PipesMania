@@ -1,7 +1,21 @@
-from sys import stdin
+import sys
 from typing_extensions import Self, Union
 import numpy as np
 from collections import defaultdict
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Piece
 # 4-bits up bottom left right
@@ -50,7 +64,7 @@ class Board:
   @staticmethod
   def parse_instance() -> Self:
       """Reads a board from stdin"""
-      output = np.pad(np.genfromtxt(stdin, dtype='S2'), 1)
+      output = np.pad(np.genfromtxt(sys.stdin, dtype='S2'), 1)
       matrix = np.ndarray(output.shape, dtype='uint8')
       for k in strToPiece:
          matrix[output == k] = strToPiece[k]
