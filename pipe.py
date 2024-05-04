@@ -73,6 +73,9 @@ class PipeManiaState:
 
 class Board:
   """Representação interna de um tabuleiro de PipeMania."""
+  def __init__(self, matrix: np.ndarray) -> None:
+     self.matrix: np.ndarray = matrix
+     self.side = matrix.shape[0] - 1 # range() é exclusivo no ultimo elemento
 
   def get_value(self, row: int, col: int) -> str:
     """Devolve o valor na respetiva posição do tabuleiro."""
@@ -114,16 +117,22 @@ class PipeMania(Problem):
   def actions(self, state: PipeManiaState):
     """Retorna uma lista ou iterador de ações que podem ser executadas a
     partir do estado passado como argumento."""
-    # TODO
-    pass
+    for row in range(1, state.board.matrix.side):
+      for col in range(1, state.board.matrix.side):
+        piece = state.board.matrix[row, col]
+        for action in pieceToAction[piece]:
+          if action != piece:
+            yield (row, col, action)
 
   def result(self, state: PipeManiaState, action):
     """Retorna o estado resultante de executar a 'action' sobre
     'state' passado como argumento. A ação a executar deve ser uma
     das presentes na lista obtida pela execução de
     self.actions(state)."""
-    # TODO
-    pass
+    row, col, piece = action
+    new_board = np.copy(state.board.matrix)
+    new_board[row, col] = piece
+    return PipeManiaState(Board(new_board))
 
   def goal_test(self, state: PipeManiaState):
     """Retorna True se e só se o estado passado como argumento é
