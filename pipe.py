@@ -60,10 +60,11 @@ pieceToAction = [
 class PipeManiaState:
   state_id = 0
 
-  def __init__(self, board):
+  def __init__(self, board, depth):
     self.board = board
     self.id = PipeManiaState.state_id
     PipeManiaState.state_id += 1
+    self.depth=depth
 
   def __lt__(self, other):
     return self.id < other.id
@@ -94,17 +95,27 @@ class Board:
 class PipeMania(Problem):
   def __init__(self, board: Board):
     """O construtor especifica o estado inicial."""
-    self.initial = PipeManiaState(board)
+    self.initial = PipeManiaState(board, 0)
 
   def actions(self, state: PipeManiaState):
     """Retorna uma lista ou iterador de ações que podem ser executadas a
     partir do estado passado como argumento."""
-    for row in range(1, state.board.side):
-      for col in range(1, state.board.side):
-        piece = state.board.matrix[row, col]
-        for action in pieceToAction[piece]:
-          # if action != piece:
-          yield (row, col, action)
+    row = state.depth // (state.board.side-1) + 1
+    col = state.depth % (state.board.side-1) + 1
+    if (row > state.board.side-1 or col > state.board.side-1):
+      return
+    print(row, col)
+    cell = state.board.matrix[row, col]
+    yield (row, col, cell)
+    for action in pieceToAction[cell]:
+      yield (row, col, action)
+      
+    # for row in range(1, state.board.side):
+    #   for col in range(1, state.board.side):
+    #     piece = state.board.matrix[row, col]
+    #     for action in pieceToAction[piece]:
+    #       # if action != piece:
+    #       yield (row, col, action)
 
   def result(self, state: PipeManiaState, action):
     """Retorna o estado resultante de executar a 'action' sobre
@@ -114,8 +125,8 @@ class PipeMania(Problem):
     row, col, piece = action
     new_board = np.copy(state.board.matrix)
     new_board[row, col] = piece
-    print(action)
-    return PipeManiaState(Board(new_board))
+    # print(action)
+    return PipeManiaState(Board(new_board), depth=state.depth+1)
 
   def goal_test(self, state: PipeManiaState):
     """Retorna True se e só se o estado passado como argumento é

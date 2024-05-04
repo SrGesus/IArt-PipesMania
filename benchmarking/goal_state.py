@@ -22,7 +22,7 @@ def test_np_bitops(m: np.ndarray):
   horizontal &= 0b0010
   return not np.any(horizontal)
 
-def tests_lists(m: np.ndarray):
+def tests_np_separate_booleans(m: np.ndarray):
   return not np.any(m[1:,::4] ^ m[:-1,1::4]) and not np.any(m[:,3:-4:4] ^ m[:,6::4])
 
 # def tests_lists(m: np.ndarray):
