@@ -77,23 +77,6 @@ class Board:
      self.matrix: np.ndarray = matrix
      self.side = matrix.shape[0] - 1 # range() é exclusivo no ultimo elemento
 
-  def get_value(self, row: int, col: int) -> str:
-    """Devolve o valor na respetiva posição do tabuleiro."""
-    # TODO
-    pass
-
-  def adjacent_vertical_values(self, row: int, col: int) -> (str, str):
-    """Devolve os valores imediatamente acima e abaixo,
-    respectivamente."""
-    # TODO
-    pass
-
-  def adjacent_horizontal_values(self, row: int, col: int) -> (str, str):
-    """Devolve os valores imediatamente à esquerda e à direita,
-    respectivamente."""
-    # TODO
-    pass
-
   @staticmethod
   def parse_instance():
     """Lê o test do standard input (stdin) que é passado como argumento
