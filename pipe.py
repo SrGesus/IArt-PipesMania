@@ -94,14 +94,13 @@ class Board:
 class PipeMania(Problem):
   def __init__(self, board: Board):
     """O construtor especifica o estado inicial."""
-    # TODO
-    pass
+    self.initial = PipeManiaState(board)
 
   def actions(self, state: PipeManiaState):
     """Retorna uma lista ou iterador de ações que podem ser executadas a
     partir do estado passado como argumento."""
-    for row in range(1, state.board.matrix.side):
-      for col in range(1, state.board.matrix.side):
+    for row in range(1, state.board.side):
+      for col in range(1, state.board.side):
         piece = state.board.matrix[row, col]
         for action in pieceToAction[piece]:
           # if action != piece:
@@ -115,6 +114,7 @@ class PipeMania(Problem):
     row, col, piece = action
     new_board = np.copy(state.board.matrix)
     new_board[row, col] = piece
+    print(action)
     return PipeManiaState(Board(new_board))
 
   def goal_test(self, state: PipeManiaState):
@@ -150,4 +150,8 @@ if __name__ == "__main__":
   # Usar uma técnica de procura para resolver a instância,
   # Retirar a solução a partir do nó resultante,
   # Imprimir para o standard output no formato indicado.
-  pass
+  problem = PipeMania(Board.parse_instance())
+  print(problem.initial.board.matrix)
+  print("Solução:")
+  print(astar_search(problem).state.board.matrix)
+
