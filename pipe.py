@@ -41,20 +41,20 @@ strToPiece: dict = {
 pieceToStr: list = ['', 'FD', 'FE', 'LH', 'FB', 'VB', 'BB', 'VE', 'FC', 'VD', 'VC', 'BC', 'LV', 'BD', 'BE']
 pieceToAction = [
                   [], # 0b0000 
-                  [np.uint8(0b0100), np.uint8(0b1000), np.uint8(0b0010)], # 0b0001 
-                  [np.uint8(0b0100), np.uint8(0b1000), np.uint8(0b0001)], # 0b0010 
-                  [np.uint8(0b1100)], # 0b0011 
-                  [np.uint8(0b0010), np.uint8(0b1000), np.uint8(0b0001)], # 0b0100 
-                  [np.uint8(0b0110), np.uint8(0b1010), np.uint8(0b1001)], # 0b0101 
-                  [np.uint8(0b0101), np.uint8(0b1010), np.uint8(0b1001)], # 0b0110 
-                  [np.uint8(0b1101), np.uint8(0b1110), np.uint8(0b1011)], # 0b0111 
-                  [np.uint8(0b0010), np.uint8(0b0100), np.uint8(0b0001)], # 0b1000 
-                  [np.uint8(0b0101), np.uint8(0b1010), np.uint8(0b0110)], # 0b1001 
-                  [np.uint8(0b0101), np.uint8(0b1001), np.uint8(0b0110)], # 0b1010 
-                  [np.uint8(0b1110), np.uint8(0b0111), np.uint8(0b1101)], # 0b1011 
-                  [np.uint8(0b0011)], # 0b1100 
-                  [np.uint8(0b1110), np.uint8(0b0111), np.uint8(0b1011)], # 0b1101 
-                  [np.uint8(0b1101), np.uint8(0b0111), np.uint8(0b1011)], # 0b1110 
+                  [np.uint8(0b0100), np.uint8(0b1000), np.uint8(0b0010)], # 0b0001
+                  [np.uint8(0b0100), np.uint8(0b1000), np.uint8(0b0001)], # 0b0010
+                  [np.uint8(0b1100)], # 0b0011
+                  [np.uint8(0b0010), np.uint8(0b1000), np.uint8(0b0001)], # 0b0100
+                  [np.uint8(0b0110), np.uint8(0b1010), np.uint8(0b1001)], # 0b0101
+                  [np.uint8(0b0101), np.uint8(0b1010), np.uint8(0b1001)], # 0b0110
+                  [np.uint8(0b1101), np.uint8(0b1110), np.uint8(0b1011)], # 0b0111
+                  [np.uint8(0b0010), np.uint8(0b0100), np.uint8(0b0001)], # 0b1000
+                  [np.uint8(0b0101), np.uint8(0b1010), np.uint8(0b0110)], # 0b1001
+                  [np.uint8(0b0101), np.uint8(0b1001), np.uint8(0b0110)], # 0b1010
+                  [np.uint8(0b1110), np.uint8(0b0111), np.uint8(0b1101)], # 0b1011
+                  [np.uint8(0b0011)], # 0b1100
+                  [np.uint8(0b1110), np.uint8(0b0111), np.uint8(0b1011)], # 0b1101
+                  [np.uint8(0b1101), np.uint8(0b0111), np.uint8(0b1011)], # 0b1110
                 ]
 
 class PipeManiaState:
@@ -75,8 +75,8 @@ class PipeManiaState:
 class Board:
   """Representação interna de um tabuleiro de PipeMania."""
   def __init__(self, matrix: np.ndarray) -> None:
-     self.matrix: np.ndarray = matrix
-     self.side = matrix.shape[0] - 1 # range() é exclusivo no ultimo elemento
+    self.matrix: np.ndarray = matrix
+    self.side = matrix.shape[0] - 1 # range() é exclusivo no ultimo elemento
 
   @staticmethod
   def parse_instance():
@@ -93,9 +93,21 @@ class Board:
 
 
 class PipeMania(Problem):
+  
   def __init__(self, board: Board):
     """O construtor especifica o estado inicial."""
     self.initial = PipeManiaState(board, 0)
+    self.moves = [[pieceToAction[x]+[x] for x in row] for row in board.matrix]
+    for i in range(1, board.side):
+      # Remove actions connecting up on top row
+      self.moves[1][i] = [action for action in self.moves[1][i] if not action & 0b1000]
+      # Remove actions connecting down on bottom row
+      self.moves[-2][i] = [action for action in self.moves[-2][i] if not action & 0b0100]
+      # Remove actions connecting left on left col
+      self.moves[i][1] = [action for action in self.moves[i][1] if not action & 0b0010]
+      # Remove actions connecting right on right col
+      self.moves[i][-2] = [action for action in self.moves[i][-2] if not action & 0b0001]
+
 
   def actions(self, state: PipeManiaState):
     """Retorna uma lista ou iterador de ações que podem ser executadas a
@@ -104,18 +116,15 @@ class PipeMania(Problem):
     col = state.depth % (state.board.side-1) + 1
     if (row > state.board.side-1 or col > state.board.side-1):
       return
-    print(row, col)
-    cell = state.board.matrix[row, col]
-    yield (row, col, cell)
-    for action in pieceToAction[cell]:
+    for action in self.moves[row][col]:
       yield (row, col, action)
-      
+
     # for row in range(1, state.board.side):
     #   for col in range(1, state.board.side):
     #     piece = state.board.matrix[row, col]
-    #     for action in pieceToAction[piece]:
-    #       # if action != piece:
-    #       yield (row, col, action)
+    #     for action in self.moves[row][col]:
+    #       if action != piece:
+    #         yield (row, col, action)
 
   def result(self, state: PipeManiaState, action):
     """Retorna o estado resultante de executar a 'action' sobre
@@ -150,7 +159,7 @@ class PipeMania(Problem):
     vertical &= 0b1000
     horizontal = shifted[:,:-1] ^ m[:,1:]
     horizontal &= 0b0010
-    return (np.sum(vertical) + np.sum(horizontal)) / 2
+    return (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * 1
 
   # TODO: outros metodos da classe
 
@@ -164,5 +173,5 @@ if __name__ == "__main__":
   problem = PipeMania(Board.parse_instance())
   print(problem.initial.board.matrix)
   print("Solução:")
-  print(astar_search(problem).state.board.matrix)
+  print(recursive_best_first_search(problem).state.board.matrix)
 
