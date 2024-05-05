@@ -107,6 +107,14 @@ class PipeMania(Problem):
       self.moves[i][1] = [action for action in self.moves[i][1] if not action & 0b0010]
       # Remove actions connecting right on right col
       self.moves[i][-2] = [action for action in self.moves[i][-2] if not action & 0b0001]
+      # Remove actions connecting to dead ends
+      for j in range(1, board.side):
+        if 0b0001 in self.moves[i][j] and 0b0010 in self.moves[i][j+1]: # right and left
+          self.moves[i][j] = [action for action in self.moves[i][j] if action != 0b0001]
+          self.moves[i][j+1] = [action for action in self.moves[i][j+1] if action != 0b0010]
+        if 0b0100 in self.moves[i][j] and 0b1000 in self.moves[i+1][j]: # up and down
+          self.moves[i][j] = [action for action in self.moves[i][j] if action != 0b0100]
+          self.moves[i+1][j] = [action for action in self.moves[i+1][j] if action != 0b1000]
 
 
   def actions(self, state: PipeManiaState):
@@ -159,7 +167,7 @@ class PipeMania(Problem):
     vertical &= 0b1000
     horizontal = shifted[:,:-1] ^ m[:,1:]
     horizontal &= 0b0010
-    return (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * 1
+    return (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * 1.5
 
   # TODO: outros metodos da classe
 
