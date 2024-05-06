@@ -8,15 +8,16 @@
 
 import sys
 import numpy as np
-from search import (
-  Problem,
-  Node,
-  astar_search,
-  breadth_first_tree_search,
-  depth_first_tree_search,
-  greedy_search,
-  recursive_best_first_search,
-)
+from search import *
+# (
+#   Problem,
+#   Node,
+#   astar_search,
+#   breadth_first_tree_search,
+#   depth_first_tree_search,
+#   greedy_search,
+#   recursive_best_first_search,
+# )
 
 # Piece
 # 4-bits up bottom left right
@@ -76,7 +77,7 @@ class Board:
   """Representação interna de um tabuleiro de PipeMania."""
   def __init__(self, matrix: np.ndarray) -> None:
     self.matrix: np.ndarray = matrix
-    self.side = matrix.shape[0] - 1 # range() é exclusivo no ultimo elemento
+    self.side = matrix.shape[0] - 2 # range() é exclusivo no ultimo elemento
 
   @staticmethod
   def parse_instance():
@@ -97,8 +98,10 @@ class PipeMania(Problem):
   def __init__(self, board: Board):
     """O construtor especifica o estado inicial."""
     self.initial = PipeManiaState(board, 0)
-    self.moves = [[pieceToAction[x]+[x] for x in row] for row in board.matrix]
-    for i in range(1, board.side):
+    # Average number of connections per piece
+    self.average = np.sum(np.unpackbits(self.initial.board.matrix)) / self.initial.board.side
+    self.moves = [[[x]+pieceToAction[x] for x in row] for row in board.matrix]
+    for i in range(1, board.side+1):
       # Remove actions connecting up on top row
       self.moves[1][i] = [action for action in self.moves[1][i] if not action & 0b1000]
       # Remove actions connecting down on bottom row
@@ -110,25 +113,99 @@ class PipeMania(Problem):
       # Remove actions connecting to dead ends
       for j in range(1, board.side):
         if 0b0001 in self.moves[i][j] and 0b0010 in self.moves[i][j+1]: # right and left
-          self.moves[i][j] = [action for action in self.moves[i][j] if action != 0b0001]
-          self.moves[i][j+1] = [action for action in self.moves[i][j+1] if action != 0b0010]
-        if 0b0100 in self.moves[i][j] and 0b1000 in self.moves[i+1][j]: # up and down
-          self.moves[i][j] = [action for action in self.moves[i][j] if action != 0b0100]
-          self.moves[i+1][j] = [action for action in self.moves[i+1][j] if action != 0b1000]
+          self.moves[i][j].remove(0b0001)
+          self.moves[i][j+1].remove(0b0010)
+        if 0b0100 in self.moves[j][i] and 0b1000 in self.moves[j+1][i]: # up and down
+          self.moves[j][i].remove(0b0100)
+          self.moves[j+1][i].remove(0b1000)
+    # for _ in range(0, 4):
+    visited = [[False for _ in range(board.side + 2)] for _ in range(board.side + 2)]
+    while True:
+      unchanged = True
+      for i in range(1, board.side+1):
+        for j in range(1, board.side+1):
+          if len(self.moves[i][j]) == 1 and not visited[i][j]:
+            visited[i][j] = True
+            unchanged = False
+            # print(f"Looking in cell {i}, {j} which is {bin(self.moves[i][j][0])}:\n{self.moves}")
+            # Piece Up
+            self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == (self.moves[i][j][0] & 0b1000) >> 1]
+            # Piece Down
+            self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == (self.moves[i][j][0] & 0b0100) << 1]
+            # Piece Left
+            self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == (self.moves[i][j][0] & 0b0010) >> 1]
+            # Piece Right
+            self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == (self.moves[i][j][0] & 0b0001) << 1]
+      if unchanged:
+        break
+    visited = [[[False, False, False, False] for _ in range(board.side + 2)] for _ in range(board.side + 2)]
+    for i in range(1, board.side+1):
+      for j in range(1, board.side+1):
+        if not visited[i][j][0]:
+          # Check if top is fixed
+          top = self.moves[i][j][0] & 0b1000
+          for a in self.moves[i][j]:
+            if a & 0b1000 != top:
+              top = None
+          if top != None:
+            # If top is fixed, force piece on its top to match
+            self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == (self.moves[i][j][0] & 0b1000) >> 1]
+            visited[i][j][0] = True
+            visited[i-1][j][1] = True
+
+        if not visited[i][j][1]:
+          # Check if bottom is fixed
+          bottom = self.moves[i][j][0] & 0b0100
+          for a in self.moves[i][j]:
+            if a & 0b0100 != bottom:
+              bottom = None
+          if bottom != None:
+            self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == (self.moves[i][j][0] & 0b0100) << 1]
+            visited[i][j][1] = True
+            visited[i+1][j][0] = True
+          
+        if not visited[i][j][2]:
+          # Check if left is fixed
+          left = self.moves[i][j][0] & 0b0010
+          for a in self.moves[i][j]:
+            if a & 0b0010 != left:
+              left = None
+          if left != None:
+            self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == left >> 1]
+            visited[i][j][2] = True
+            visited[i][j-1][3] = True
+
+        if not visited[i][j][3]:
+          # Check if right is fixed
+          right = self.moves[i][j][0] & 0b0001
+          for a in self.moves[i][j]:
+            if a & 0b0001 != right:
+              right = None
+          if right != None:
+            self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == right << 1]
+            visited[i][j][3] = True
+            visited[i][j+1][2] = True
+
+
+    for i in range(1, board.side+1):
+      for j in range(1, board.side+1):
+        self.initial.board.matrix[i,j] = self.moves[i][j][0]
+
+    # print(self.moves)
 
 
   def actions(self, state: PipeManiaState):
     """Retorna uma lista ou iterador de ações que podem ser executadas a
     partir do estado passado como argumento."""
-    row = state.depth // (state.board.side-1) + 1
-    col = state.depth % (state.board.side-1) + 1
-    if (row > state.board.side-1 or col > state.board.side-1):
+    row = state.depth // (state.board.side) + 1
+    col = state.depth % (state.board.side) + 1
+    if (row > state.board.side or col > state.board.side):
       return
     for action in self.moves[row][col]:
       yield (row, col, action)
 
-    # for row in range(1, state.board.side):
-    #   for col in range(1, state.board.side):
+    # for row in range(1, state.board.side+1):
+    #   for col in range(1, state.board.side+1):
     #     piece = state.board.matrix[row, col]
     #     for action in self.moves[row][col]:
     #       if action != piece:
@@ -167,7 +244,17 @@ class PipeMania(Problem):
     vertical &= 0b1000
     horizontal = shifted[:,:-1] ^ m[:,1:]
     horizontal &= 0b0010
-    return (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * 1.5
+    return (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * self.average
+  
+  def value(self, state: PipeManiaState):
+    """Função heuristica utilizada para a procura A*."""
+    m = state.board.matrix
+    shifted = m << 1
+    vertical = shifted[:-1,] ^ m[1:,]
+    vertical &= 0b1000
+    horizontal = shifted[:,:-1] ^ m[:,1:]
+    horizontal &= 0b0010
+    return self.average * (self.initial.board.side * self.initial.board.side) - (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * 2
 
   # TODO: outros metodos da classe
 
@@ -178,10 +265,12 @@ if __name__ == "__main__":
   # Usar uma técnica de procura para resolver a instância,
   # Retirar a solução a partir do nó resultante,
   # Imprimir para o standard output no formato indicado.
-  problem = PipeMania(Board.parse_instance())
+  sol = PipeMania(Board.parse_instance())
   # print(problem.initial.board.matrix)
   # print("Solução:")
-  sol = recursive_best_first_search(problem).state.board.matrix
+  # sol = hill_climbing(problem).board
+  # sys.setrecursionlimit(1500)
+  sol = recursive_best_first_search(sol).state.board.matrix
   for row in sol[1:-1,1:-1]:
     print('\t'.join(map(lambda x: pieceToStr[x], row)))
 
