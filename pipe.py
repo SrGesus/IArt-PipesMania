@@ -38,7 +38,7 @@ strToPiece: dict = {
   b'BE': np.uint8(0b1110),
 }
 
-pieceToStr: list = ['', 'FD', 'FE', 'LH', 'FB', 'VB', 'BB', 'VE', 'FC', 'VD', 'VC', 'BC', 'LV', 'BD', 'BE']
+pieceToStr: list = ['', 'FD', 'FE', 'LH', 'FB', 'VB', 'VE', 'BB', 'FC', 'VD', 'VC', 'BC', 'LV', 'BD', 'BE']
 pieceToAction = [
                   [], # 0b0000 
                   [np.uint8(0b0100), np.uint8(0b1000), np.uint8(0b0010)], # 0b0001
@@ -179,7 +179,9 @@ if __name__ == "__main__":
   # Retirar a solução a partir do nó resultante,
   # Imprimir para o standard output no formato indicado.
   problem = PipeMania(Board.parse_instance())
-  print(problem.initial.board.matrix)
-  print("Solução:")
-  print(recursive_best_first_search(problem).state.board.matrix)
+  # print(problem.initial.board.matrix)
+  # print("Solução:")
+  sol = recursive_best_first_search(problem).state.board.matrix
+  for row in sol[1:-1,1:-1]:
+    print('\t'.join(map(lambda x: pieceToStr[x], row)))
 
