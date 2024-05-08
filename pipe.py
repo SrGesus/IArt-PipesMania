@@ -118,94 +118,88 @@ class PipeMania(Problem):
         if 0b0100 in self.moves[j][i] and 0b1000 in self.moves[j+1][i]: # up and down
           self.moves[j][i].remove(0b0100)
           self.moves[j+1][i].remove(0b1000)
-    # for _ in range(0, 4):
-    visited = [[False for _ in range(board.side + 2)] for _ in range(board.side + 2)]
+    visited = [[[False, False, False, False] for _ in range(board.side + 2)] for _ in range(board.side + 2)]
     while True:
       unchanged = True
       for i in range(1, board.side+1):
         for j in range(1, board.side+1):
-          if len(self.moves[i][j]) == 1 and not visited[i][j]:
-            visited[i][j] = True
-            unchanged = False
-            # print(f"Looking in cell {i}, {j} which is {bin(self.moves[i][j][0])}:\n{self.moves}")
-            # Piece Up
-            self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == (self.moves[i][j][0] & 0b1000) >> 1]
-            # Piece Down
-            self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == (self.moves[i][j][0] & 0b0100) << 1]
-            # Piece Left
-            self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == (self.moves[i][j][0] & 0b0010) >> 1]
-            # Piece Right
-            self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == (self.moves[i][j][0] & 0b0001) << 1]
+          if not visited[i][j][0]:
+            # Check if top is fixed
+            top = self.moves[i][j][0] & 0b1000
+            for a in self.moves[i][j]:
+              if a & 0b1000 != top:
+                top = None
+            if top != None:
+              # If top is fixed, force piece on its top to match
+              self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == (self.moves[i][j][0] & 0b1000) >> 1]
+              visited[i][j][0] = True
+              visited[i-1][j][1] = True
+              unchanged = False
+          if not visited[i][j][1]:
+            # Check if bottom is fixed
+            bottom = self.moves[i][j][0] & 0b0100
+            for a in self.moves[i][j]:
+              if a & 0b0100 != bottom:
+                bottom = None
+            if bottom != None:
+              self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == (self.moves[i][j][0] & 0b0100) << 1]
+              visited[i][j][1] = True
+              visited[i+1][j][0] = True
+              unchanged = False
+          if not visited[i][j][2]:
+            # Check if left is fixed
+            left = self.moves[i][j][0] & 0b0010
+            for a in self.moves[i][j]:
+              if a & 0b0010 != left:
+                left = None
+            if left != None:
+              self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == left >> 1]
+              visited[i][j][2] = True
+              visited[i][j-1][3] = True
+              unchanged = False
+          if not visited[i][j][3]:
+            # Check if right is fixed
+            right = self.moves[i][j][0] & 0b0001
+            for a in self.moves[i][j]:
+              if a & 0b0001 != right:
+                right = None
+            if right != None:
+              self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == right << 1]
+              visited[i][j][3] = True
+              visited[i][j+1][2] = True
+              unchanged = False
       if unchanged:
         break
-    visited = [[[False, False, False, False] for _ in range(board.side + 2)] for _ in range(board.side + 2)]
-    for i in range(1, board.side+1):
-      for j in range(1, board.side+1):
-        if not visited[i][j][0]:
-          # Check if top is fixed
-          top = self.moves[i][j][0] & 0b1000
-          for a in self.moves[i][j]:
-            if a & 0b1000 != top:
-              top = None
-          if top != None:
-            # If top is fixed, force piece on its top to match
-            self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == (self.moves[i][j][0] & 0b1000) >> 1]
-            visited[i][j][0] = True
-            visited[i-1][j][1] = True
-
-        if not visited[i][j][1]:
-          # Check if bottom is fixed
-          bottom = self.moves[i][j][0] & 0b0100
-          for a in self.moves[i][j]:
-            if a & 0b0100 != bottom:
-              bottom = None
-          if bottom != None:
-            self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == (self.moves[i][j][0] & 0b0100) << 1]
-            visited[i][j][1] = True
-            visited[i+1][j][0] = True
-          
-        if not visited[i][j][2]:
-          # Check if left is fixed
-          left = self.moves[i][j][0] & 0b0010
-          for a in self.moves[i][j]:
-            if a & 0b0010 != left:
-              left = None
-          if left != None:
-            self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == left >> 1]
-            visited[i][j][2] = True
-            visited[i][j-1][3] = True
-
-        if not visited[i][j][3]:
-          # Check if right is fixed
-          right = self.moves[i][j][0] & 0b0001
-          for a in self.moves[i][j]:
-            if a & 0b0001 != right:
-              right = None
-          if right != None:
-            self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == right << 1]
-            visited[i][j][3] = True
-            visited[i][j+1][2] = True
-
 
     for i in range(1, board.side+1):
       for j in range(1, board.side+1):
         self.initial.board.matrix[i,j] = self.moves[i][j][0]
+        if len(self.moves[i][j]) == 1:
+          self.moves[i][j] = []
+      #   print(self.moves[i][j], end=" ")
+      # print("")
 
-    # print(self.moves)
+  
 
 
   def actions(self, state: PipeManiaState):
     """Retorna uma lista ou iterador de ações que podem ser executadas a
     partir do estado passado como argumento."""
-    row = state.depth // (state.board.side) + 1
-    col = state.depth % (state.board.side) + 1
-    if (row > state.board.side or col > state.board.side):
-      return
-    for action in self.moves[row][col]:
-      yield (row, col, action)
+    _row = state.depth // (state.board.side)
+    _col = state.depth % (state.board.side)
+    # if (_row >= state.board.side):
+    #   return
+    # for action in self.moves[row+1][col+1]:
+    #   yield (row+1, col+1, action)
 
-    # for row in range(1, state.board.side+1):
-    #   for col in range(1, state.board.side+1):
+    for row in range(1, state.board.side+1):
+      for col in range(1, state.board.side+1):
+        piece = state.board.matrix[row, col]
+        for action in self.moves[row][col]:
+          if action != piece:
+            yield (row, col, action)
+    # for row in range(1, 1+_row):
+    #   for col in range(1, 1+_col):
     #     piece = state.board.matrix[row, col]
     #     for action in self.moves[row][col]:
     #       if action != piece:
@@ -226,7 +220,8 @@ class PipeMania(Problem):
     """Retorna True se e só se o estado passado como argumento é
     um estado objetivo. Deve verificar se todas as posições do tabuleiro
     estão preenchidas de acordo com as regras do problema."""
-    m = state.board.matrix
+    m: np.ndarray = state.board.matrix
+    # print(m)
     shifted = m << 1
     vertical = shifted[:-1,] ^ m[1:,]
     vertical &= 0b1000
@@ -234,29 +229,59 @@ class PipeMania(Problem):
       return False
     horizontal = shifted[:,:-1] ^ m[:,1:]
     horizontal &= 0b0010
-    return not np.any(horizontal)
+    if np.any(horizontal):
+      return False
+    # return True
+    m = m.tolist()
+    visited = [[False for _ in range(0, len(m))] for _ in range(0, len(m))]
+    frontier = [(1,1)]
+    while frontier:
+      row, col = frontier.pop()
+      if (visited[row][col]):
+        continue
+      visited[row][col] = True
+      cell = m[row][col]
+      if cell & 0b1000 and m[row-1][col] & 0b0100:
+        frontier.append((row-1, col))
+      if cell & 0b0100 and m[row+1][col] & 0b1000:
+        frontier.append((row+1, col))
+      if cell & 0b0010 and m[row][col-1] & 0b0001:
+        frontier.append((row, col-1))
+      if cell & 0b0001 and m[row][col+1] & 0b0010:
+        frontier.append((row, col+1))
+    return np.sum(visited) == self.initial.board.side ** 2
 
   def h(self, node: Node):
     """Função heuristica utilizada para a procura A*."""
+    # DFS to find number of connected pieces to piece (1,1)
+    m = node.state.board.matrix.tolist()
+    visited = [[False for _ in range(0, len(m))] for _ in range(0, len(m))]
+    frontier = [(1,1)]
+    while frontier:
+      row, col = frontier.pop()
+      if (visited[row][col]):
+        continue
+      visited[row][col] = True
+      cell = m[row][col]
+      if cell & 0b1000 and m[row-1][col] & 0b0100:
+        frontier.append((row-1, col))
+      if cell & 0b0100 and m[row+1][col] & 0b1000:
+        frontier.append((row+1, col))
+      if cell & 0b0010 and m[row][col-1] & 0b0001:
+        frontier.append((row, col-1))
+      if cell & 0b0001 and m[row][col+1] & 0b0010:
+        frontier.append((row, col+1))
     m = node.state.board.matrix
     shifted = m << 1
     vertical = shifted[:-1,] ^ m[1:,]
     vertical &= 0b1000
     horizontal = shifted[:,:-1] ^ m[:,1:]
     horizontal &= 0b0010
-    return (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * self.average
-  
-  def value(self, state: PipeManiaState):
-    """Função heuristica utilizada para a procura A*."""
-    m = state.board.matrix
-    shifted = m << 1
-    vertical = shifted[:-1,] ^ m[1:,]
-    vertical &= 0b1000
-    horizontal = shifted[:,:-1] ^ m[:,1:]
-    horizontal &= 0b0010
-    return self.average * (self.initial.board.side * self.initial.board.side) - (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * 2
+    leaks = (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * self.average
+    # return leaks
+    return node.state.board.side**2 - np.sum(visited)
+    # return (np.sum(vertical) / 8 + np.sum(horizontal) / 4) * self.average
 
-  # TODO: outros metodos da classe
 
 
 if __name__ == "__main__":
@@ -270,7 +295,8 @@ if __name__ == "__main__":
   # print("Solução:")
   # sol = hill_climbing(problem).board
   # sys.setrecursionlimit(1500)
-  sol = recursive_best_first_search(sol).state.board.matrix
+  sol = astar_search(sol).state.board.matrix
+  # sol = sol.initial.board.matrix
   for row in sol[1:-1,1:-1]:
     print('\t'.join(map(lambda x: pieceToStr[x], row)))
 
