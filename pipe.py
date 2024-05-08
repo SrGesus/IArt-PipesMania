@@ -8,16 +8,25 @@
 
 import sys
 import numpy as np
-from search import *
-# (
-#   Problem,
-#   Node,
-#   astar_search,
-#   breadth_first_tree_search,
-#   depth_first_tree_search,
-#   greedy_search,
-#   recursive_best_first_search,
-# )
+from search import (
+  Problem,
+  Node,
+  astar_search,
+  breadth_first_tree_search,
+  depth_first_tree_search,
+  greedy_search,
+  recursive_best_first_search,
+)
+
+top_mask    = 0b1000
+bottom_mask = 0b0100
+left_mask   = 0b0010
+right_mask  = 0b0001
+
+opposite = {
+  top_mask: bottom_mask, bottom_mask: top_mask,
+  left_mask: right_mask, right_mask: left_mask
+  }
 
 # Piece
 # 4-bits up bottom left right
