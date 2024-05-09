@@ -19,7 +19,6 @@ import copy
 # )
 from search import *
 
-
 ### Global Constants
 # Representation of a Piece in 4-bits:
 # 1 represents a connection, 0 represents no connection
@@ -29,10 +28,6 @@ BOTTOM_MASK = np.uint8(0b0100)
 LEFT_MASK   = np.uint8(0b0010)
 RIGHT_MASK  = np.uint8(0b0001)
 DIRECTIONS = [TOP_MASK, BOTTOM_MASK, LEFT_MASK, RIGHT_MASK]
-OPPOSITE = {
-  TOP_MASK: BOTTOM_MASK, BOTTOM_MASK: TOP_MASK,
-  LEFT_MASK: RIGHT_MASK, RIGHT_MASK: LEFT_MASK,
-}
 STR_TO_PIECE: dict = {
   b'0':  np.uint8(0b0000),  b'FD': np.uint8(0b0001),  b'FE': np.uint8(0b0010),  
   b'LH': np.uint8(0b0011),  b'FB': np.uint8(0b0100),  b'VB': np.uint8(0b0101),  
@@ -81,18 +76,14 @@ class PipeManiaState:
 
 class Board:
   """Representação interna de um tabuleiro de PipeMania."""
-  invalid_board = None
-
   def __init__(self, matrix: np.ndarray, moves) -> None:
     self.matrix = matrix
     self.side = matrix.shape[0] - 2
-    if Board.invalid_board == None:
-      Board.invalid_board = [[[] for _ in range(self.side + 2)] for _ in range(self.side + 2)]
     self.moves = moves
     if moves == None:
       self.prune_moves()
     else:
-      self.moves: list = [[[] for _ in row] for row in Board.invalid_board]
+      self.moves: list = [[[] for _ in range(self.side + 2)] for _ in range(self.side + 2)]
       for i, j, x in moves:
         self.moves[i][j].append(x)
 
@@ -107,7 +98,8 @@ class Board:
           top = None
       if top != None:
         # If top is fixed, force piece on its top to match
-        self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == (self.moves[i][j][0] & 0b1000) >> 1]
+        top >>= 1
+        self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == top]
         visited[i][j][0] = True
         visited[i-1][j][1] = True
         unchanged = False
@@ -119,7 +111,8 @@ class Board:
           bottom = None
       if bottom != None:
         # If bottom is fixed, force piece on its bottom to match
-        self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == (self.moves[i][j][0] & 0b0100) << 1]
+        bottom <<= 1
+        self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == bottom]
         visited[i][j][1] = True
         visited[i+1][j][0] = True
         unchanged = False
@@ -131,7 +124,8 @@ class Board:
           left = None
       if left != None:
         # If left is fixed, force piece on its left to match
-        self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == left >> 1]
+        left >>= 1
+        self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == left]
         visited[i][j][2] = True
         visited[i][j-1][3] = True
         unchanged = False
@@ -143,7 +137,8 @@ class Board:
           right = None
       if right != None:
         # If right is fixed, force piece on its right to match
-        self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == right << 1]
+        right <<= 1
+        self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == right]
         visited[i][j][3] = True
         visited[i][j+1][2] = True
         unchanged = False
@@ -221,7 +216,9 @@ class PipeMania(Problem):
   def actions(self, state: PipeManiaState):
     """Retorna uma lista de ações que podem ser executadas a
     partir do estado passado como argumento."""
-    return state.board.moves
+    for i, j, p in state.board.moves:
+      if state.board.matrix[i,j] != p:
+        yield (i,j,p)
 
   def result(self, state: PipeManiaState, action):
     """Retorna o estado resultante de executar a 'action' sobre
@@ -291,10 +288,9 @@ class PipeMania(Problem):
       if cell & 0b0001 and m[row][col+1] & 0b0010:
         frontier.append((row, col+1))
     return (node.state.board.side**2 - np.sum(visited))
-  
+
 if __name__ == "__main__":
   prob = PipeMania(Board.parse_instance())
   # prob.initial.print()
   sol = astar_search(prob)
   sol.state.print()
-  # print(sol.state.id)
