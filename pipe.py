@@ -81,118 +81,140 @@ class Board:
     self.side = matrix.shape[0] - 2
     self.moves = moves
     if moves == None:
-      self.prune_moves()
+      self.prune_first_time()
     else:
-      self.moves: list = [[[] for _ in range(self.side + 2)] for _ in range(self.side + 2)]
-      for i, j, x in moves:
-        self.moves[i][j].append(x)
+      self.move_grid: list = [[[x] for x in row] for row in self.matrix]
+      for i, j, x in self.moves:
+        self.move_grid[i][j].append(x)
 
   def prune_unit(self, visited: list, i, j) -> None:
     """For a given position prune the actions around it"""
     unchanged = True
     if not visited[i][j][0]:
       # Check if top is fixed
-      top = self.moves[i][j][0] & 0b1000
-      for a in self.moves[i][j]:
+      top = self.move_grid[i][j][0] & 0b1000
+      for a in self.move_grid[i][j]:
         if a & 0b1000 != top:
           top = None
       if top != None:
         # If top is fixed, force piece on its top to match
         top >>= 1
-        self.moves[i-1][j] = [a for a in self.moves[i-1][j] if a & 0b0100 == top]
+        self.move_grid[i-1][j] = [a for a in self.move_grid[i-1][j] if a & 0b0100 == top]
         visited[i][j][0] = True
         visited[i-1][j][1] = True
         unchanged = False
     if not visited[i][j][1]:
       # Check if bottom is fixed
-      bottom = self.moves[i][j][0] & 0b0100
-      for a in self.moves[i][j]:
+      bottom = self.move_grid[i][j][0] & 0b0100
+      for a in self.move_grid[i][j]:
         if a & 0b0100 != bottom:
           bottom = None
       if bottom != None:
         # If bottom is fixed, force piece on its bottom to match
         bottom <<= 1
-        self.moves[i+1][j] = [a for a in self.moves[i+1][j] if a & 0b1000 == bottom]
+        self.move_grid[i+1][j] = [a for a in self.move_grid[i+1][j] if a & 0b1000 == bottom]
         visited[i][j][1] = True
         visited[i+1][j][0] = True
         unchanged = False
     if not visited[i][j][2]:
       # Check if left is fixed
-      left = self.moves[i][j][0] & 0b0010
-      for a in self.moves[i][j]:
+      left = self.move_grid[i][j][0] & 0b0010
+      for a in self.move_grid[i][j]:
         if a & 0b0010 != left:
           left = None
       if left != None:
         # If left is fixed, force piece on its left to match
         left >>= 1
-        self.moves[i][j-1] = [a for a in self.moves[i][j-1] if a & 0b0001 == left]
+        self.move_grid[i][j-1] = [a for a in self.move_grid[i][j-1] if a & 0b0001 == left]
         visited[i][j][2] = True
         visited[i][j-1][3] = True
         unchanged = False
     if not visited[i][j][3]:
       # Check if right is fixed
-      right = self.moves[i][j][0] & 0b0001
-      for a in self.moves[i][j]:
+      right = self.move_grid[i][j][0] & 0b0001
+      for a in self.move_grid[i][j]:
         if a & 0b0001 != right:
           right = None
       if right != None:
         # If right is fixed, force piece on its right to match
         right <<= 1
-        self.moves[i][j+1] = [a for a in self.moves[i][j+1] if a & 0b0010 == right]
+        self.move_grid[i][j+1] = [a for a in self.move_grid[i][j+1] if a & 0b0010 == right]
         visited[i][j][3] = True
         visited[i][j+1][2] = True
         unchanged = False
     return unchanged
-
-  def prune_moves(self):
+  
+  def prune_first_time(self):
     """Infere que estados estão a mais na matrix de ações possíveis"""
-    # Create moves matrix, or copy it if it already exists
-    if self.moves == None:
-      self.moves = [[[x]+PIECE_ROTATIONS[x] for x in row] for row in self.matrix]
-      
+    # Create moves matrix, if it does not exist
+    self.move_grid = [[[x]+PIECE_ROTATIONS[x] for x in row] for row in self.matrix]
+    # Initial pruning
     for i in range(1, self.side+1):
       # Remove actions connecting up on top row
-      self.moves[1][i] = [action for action in self.moves[1][i] if not action & TOP_MASK]
+      self.move_grid[1][i] = [action for action in self.move_grid[1][i] if not action & TOP_MASK]
       # Remove actions connecting down on bottom row
-      self.moves[-2][i] = [action for action in self.moves[-2][i] if not action & BOTTOM_MASK]
+      self.move_grid[-2][i] = [action for action in self.move_grid[-2][i] if not action & BOTTOM_MASK]
       # Remove actions connecting left on left col
-      self.moves[i][1] = [action for action in self.moves[i][1] if not action & LEFT_MASK]
+      self.move_grid[i][1] = [action for action in self.move_grid[i][1] if not action & LEFT_MASK]
       # Remove actions connecting right on right col
-      self.moves[i][-2] = [action for action in self.moves[i][-2] if not action & RIGHT_MASK]
+      self.move_grid[i][-2] = [action for action in self.move_grid[i][-2] if not action & RIGHT_MASK]
       # Remove actions connecting to dead ends
       for j in range(1, self.side):
-        if 0b0001 in self.moves[i][j] and 0b0010 in self.moves[i][j+1]: # right and left
-          self.moves[i][j].remove(0b0001)
-          self.moves[i][j+1].remove(0b0010)
-        if 0b0100 in self.moves[j][i] and 0b1000 in self.moves[j+1][i]: # up and down
-          self.moves[j][i].remove(0b0100)
-          self.moves[j+1][i].remove(0b1000)
+        if 0b0001 in self.move_grid[i][j] and 0b0010 in self.move_grid[i][j+1]: # right and left
+          self.move_grid[i][j].remove(0b0001)
+          self.move_grid[i][j+1].remove(0b0010)
+        if 0b0100 in self.move_grid[j][i] and 0b1000 in self.move_grid[j+1][i]: # up and down
+          self.move_grid[j][i].remove(0b0100)
+          self.move_grid[j+1][i].remove(0b1000)
     # Prune every position
     visited = [[[False, False, False, False] for _ in range(self.side + 2)] for _ in range(self.side + 2)]
     while True:
       unchanged = True
       for i in range(1, self.side+1):
         for j in range(1, self.side+1):
-          if len(self.moves[i][j]) == 0:
-            continue
           unchanged &= self.prune_unit(visited, i, j)
       if unchanged:
         break
+        
     # Reset matrix state and remove actions that have no alternative
     for i in range(1, self.side+1):
       for j in range(1, self.side+1):
-        if len(self.moves[i][j]) == 0:
+        self.matrix[i,j] = self.move_grid[i][j][0]
+        self.move_grid[i][j].pop(0)
+    self.moves = [
+      (i, j, p)
+      for i in range(1, self.side+1)
+      for j in range(1, self.side+1) 
+      for p in self.move_grid[i][j] 
+    ]
+    del self.move_grid
+
+  def prune_moves(self):
+    """Infere que estados estão a mais na matrix de ações possíveis"""
+    # Prune every position
+    visited = [[[False, False, False, False] for _ in range(self.side + 2)] for _ in range(self.side + 2)]
+    while True:
+      unchanged = True
+      for i, j, _ in self.moves:
+        if len(self.move_grid[i][j]) == 0:
           continue
-        self.matrix[i,j] = self.moves[i][j][0]
-        if len(self.moves[i][j]) == 1:
-          self.moves[i][j] = []
-    moves = []
-    # Delete move matrix for a list
+        unchanged &= self.prune_unit(visited, i, j)
+      if unchanged:
+        break
+
+    for i, j, _ in self.moves:
+      if len(self.move_grid[i][j]) == 0:
+        self.moves = []
+        return
+      self.matrix[i,j] = self.move_grid[i][j][0]
     for i in range(1, self.side+1):
       for j in range(1, self.side+1):
-        for p in self.moves[i][j]:
-          moves.append((i, j, p))
-    self.moves = moves
+        self.move_grid[i][j].pop(0)
+          
+    self.moves = [
+      (i, j, p) for i,j,p in self.moves if p in self.move_grid[i][j]
+    ]
+    del self.move_grid
 
   @staticmethod
   def parse_instance():
@@ -228,7 +250,7 @@ class PipeMania(Problem):
     row, col, piece = action
     new_board = Board(np.copy(state.board.matrix), state.board.moves)
     new_board.matrix[row, col] = piece
-    new_board.moves[row][col] = [piece]
+    new_board.move_grid[row][col] = [piece]
     new_board.prune_moves()
     return PipeManiaState(new_board)
 
@@ -294,3 +316,4 @@ if __name__ == "__main__":
   # prob.initial.print()
   sol = astar_search(prob)
   sol.state.print()
+  # print(PipeManiaState.state_id)
