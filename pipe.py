@@ -29,31 +29,31 @@ LEFT_MASK   = np.uint8(0b0010)
 RIGHT_MASK  = np.uint8(0b0001)
 DIRECTIONS = [TOP_MASK, BOTTOM_MASK, LEFT_MASK, RIGHT_MASK]
 STR_TO_PIECE: dict = {
-  '0':  np.uint8(0b0000),  'FD': np.uint8(0b0001),  'FE': np.uint8(0b0010),  
-  'LH': np.uint8(0b0011),  'FB': np.uint8(0b0100),  'VB': np.uint8(0b0101),  
-  'VE': np.uint8(0b0110),  'BB': np.uint8(0b0111),  'FC': np.uint8(0b1000),  
-  'VD': np.uint8(0b1001),  'VC': np.uint8(0b1010),  'BC': np.uint8(0b1011),  
-  'LV': np.uint8(0b1100),  'BD': np.uint8(0b1101),  'BE': np.uint8(0b1110),
+  '0':  0b0000,  'FD': 0b0001,  'FE': 0b0010,  
+  'LH': 0b0011,  'FB': 0b0100,  'VB': 0b0101,  
+  'VE': 0b0110,  'BB': 0b0111,  'FC': 0b1000,  
+  'VD': 0b1001,  'VC': 0b1010,  'BC': 0b1011,  
+  'LV': 0b1100,  'BD': 0b1101,  'BE': 0b1110,
 }
 PIECE_TO_STR: list = [
   '', 'FD', 'FE', 'LH', 'FB', 'VB', 'VE', 'BB', 
   'FC', 'VD', 'VC', 'BC', 'LV', 'BD', 'BE']
 PIECE_ROTATIONS = [
   [],             # 0b0000 
-  [np.uint8(0b0100), np.uint8(0b1000), np.uint8(0b0010)], # 0b0001
-  [np.uint8(0b0100), np.uint8(0b1000), np.uint8(0b0001)], # 0b0010
-  [np.uint8(0b1100)],         # 0b0011
-  [np.uint8(0b0010), np.uint8(0b1000), np.uint8(0b0001)], # 0b0100
-  [np.uint8(0b0110), np.uint8(0b1010), np.uint8(0b1001)], # 0b0101
-  [np.uint8(0b0101), np.uint8(0b1010), np.uint8(0b1001)], # 0b0110
-  [np.uint8(0b1101), np.uint8(0b1110), np.uint8(0b1011)], # 0b0111
-  [np.uint8(0b0010), np.uint8(0b0100), np.uint8(0b0001)], # 0b1000
-  [np.uint8(0b0101), np.uint8(0b1010), np.uint8(0b0110)], # 0b1001
-  [np.uint8(0b0101), np.uint8(0b1001), np.uint8(0b0110)], # 0b1010
-  [np.uint8(0b1110), np.uint8(0b0111), np.uint8(0b1101)], # 0b1011
-  [np.uint8(0b0011)],         # 0b1100
-  [np.uint8(0b1110), np.uint8(0b0111), np.uint8(0b1011)], # 0b1101
-  [np.uint8(0b1101), np.uint8(0b0111), np.uint8(0b1011)], # 0b1110
+  [0b0100, 0b1000, 0b0010], # 0b0001
+  [0b0100, 0b1000, 0b0001], # 0b0010
+  [0b1100],         # 0b0011
+  [0b0010, 0b1000, 0b0001], # 0b0100
+  [0b0110, 0b1010, 0b1001], # 0b0101
+  [0b0101, 0b1010, 0b1001], # 0b0110
+  [0b1101, 0b1110, 0b1011], # 0b0111
+  [0b0010, 0b0100, 0b0001], # 0b1000
+  [0b0101, 0b1010, 0b0110], # 0b1001
+  [0b0101, 0b1001, 0b0110], # 0b1010
+  [0b1110, 0b0111, 0b1101], # 0b1011
+  [0b0011],         # 0b1100
+  [0b1110, 0b0111, 0b1011], # 0b1101
+  [0b1101, 0b0111, 0b1011], # 0b1110
 ]
 
 class PipeManiaState:
@@ -83,7 +83,7 @@ class Board:
     if moves == None:
       self.prune_first_time()
     else:
-      self.move_grid: list = [[[x] for x in row] for row in self.matrix]
+      self.move_grid: list = self.matrix[..., np.newaxis].tolist()
       for i, j, x in self.moves:
         self.move_grid[i][j].append(x)
 
@@ -229,8 +229,6 @@ class PipeMania(Problem):
   def __init__(self, board: Board):
     """O construtor especifica o estado inicial."""
     self.initial = PipeManiaState(board)
-    # Average number of connections per piece
-   # self.average = np.sum(np.unpackbits(self.initial.board.matrix)) / self.initial.board.side
 
   def actions(self, state: PipeManiaState):
     """Retorna uma lista de ações que podem ser executadas a
