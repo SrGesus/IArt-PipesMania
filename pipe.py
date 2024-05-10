@@ -180,12 +180,11 @@ class Board:
     for i in range(1, self.side+1):
       for j in range(1, self.side+1):
         self.matrix[i,j] = self.move_grid[i][j][0]
-        self.move_grid[i][j].pop(0)
     self.moves = [
       (i, j, p)
       for i in range(1, self.side+1)
       for j in range(1, self.side+1) 
-      for p in self.move_grid[i][j] 
+      for p in self.move_grid[i][j][1:]
     ]
     del self.move_grid
 
