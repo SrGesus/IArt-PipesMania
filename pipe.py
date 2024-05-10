@@ -29,11 +29,11 @@ LEFT_MASK   = np.uint8(0b0010)
 RIGHT_MASK  = np.uint8(0b0001)
 DIRECTIONS = [TOP_MASK, BOTTOM_MASK, LEFT_MASK, RIGHT_MASK]
 STR_TO_PIECE: dict = {
-  b'0':  np.uint8(0b0000),  b'FD': np.uint8(0b0001),  b'FE': np.uint8(0b0010),  
-  b'LH': np.uint8(0b0011),  b'FB': np.uint8(0b0100),  b'VB': np.uint8(0b0101),  
-  b'VE': np.uint8(0b0110),  b'BB': np.uint8(0b0111),  b'FC': np.uint8(0b1000),  
-  b'VD': np.uint8(0b1001),  b'VC': np.uint8(0b1010),  b'BC': np.uint8(0b1011),  
-  b'LV': np.uint8(0b1100),  b'BD': np.uint8(0b1101),  b'BE': np.uint8(0b1110),
+  '0':  np.uint8(0b0000),  'FD': np.uint8(0b0001),  'FE': np.uint8(0b0010),  
+  'LH': np.uint8(0b0011),  'FB': np.uint8(0b0100),  'VB': np.uint8(0b0101),  
+  'VE': np.uint8(0b0110),  'BB': np.uint8(0b0111),  'FC': np.uint8(0b1000),  
+  'VD': np.uint8(0b1001),  'VC': np.uint8(0b1010),  'BC': np.uint8(0b1011),  
+  'LV': np.uint8(0b1100),  'BD': np.uint8(0b1101),  'BE': np.uint8(0b1110),
 }
 PIECE_TO_STR: list = [
   '', 'FD', 'FE', 'LH', 'FB', 'VB', 'VE', 'BB', 
@@ -221,11 +221,13 @@ class Board:
     """Lê o test do standard input (stdin) que é passado como argumento
     e retorna uma instância da classe Board.
     """
-    output = np.pad(np.genfromtxt(sys.stdin, dtype='S2'), 1)
-    matrix = np.ndarray(output.shape, dtype='uint8')
-    for k in STR_TO_PIECE:
-        matrix[output == k] = STR_TO_PIECE[k]
-    return Board(matrix, None)
+
+    matrix = []
+    for line in sys.stdin:
+      matrix.append([0]+[STR_TO_PIECE[x] for x in line.split()]+[0])
+    matrix.insert(0,[0]*len(matrix[0]))
+    matrix.append([0]*len(matrix[0]))
+    return Board(np.array(matrix), None)
 
 
 class PipeMania(Problem):
@@ -233,7 +235,7 @@ class PipeMania(Problem):
     """O construtor especifica o estado inicial."""
     self.initial = PipeManiaState(board)
     # Average number of connections per piece
-    self.average = np.sum(np.unpackbits(self.initial.board.matrix)) / self.initial.board.side
+   # self.average = np.sum(np.unpackbits(self.initial.board.matrix)) / self.initial.board.side
 
   def actions(self, state: PipeManiaState):
     """Retorna uma lista de ações que podem ser executadas a
@@ -258,36 +260,37 @@ class PipeMania(Problem):
     """Retorna True se e só se o estado passado como argumento é
     um estado objetivo. Deve verificar se todas as posições do tabuleiro
     estão preenchidas de acordo com as regras do problema."""
-    m: np.ndarray = state.board.matrix
-    # print(m)
-    shifted = m << 1
-    vertical = shifted[:-1,] ^ m[1:,]
-    vertical &= 0b1000
-    if (np.any(vertical)):
-      return False
-    horizontal = shifted[:,:-1] ^ m[:,1:]
-    horizontal &= 0b0010
-    if np.any(horizontal):
-      return False
+    # m: np.ndarray = state.board.matrix
+    # # print(m)
+    # shifted = m << 1
+    # vertical = shifted[:-1,] ^ m[1:,]
+    # vertical &= 0b1000
+    # if (np.any(vertical)):
+    #   return False
+    # horizontal = shifted[:,:-1] ^ m[:,1:]
+    # horizontal &= 0b0010
+    # if np.any(horizontal):
+    #   return False
     # DFS that checks if all pieces are connected to (1,1)
     # m = m.tolist()
-    visited = [[False for _ in range(0, len(m))] for _ in range(0, len(m))]
-    frontier = [(1,1)]
-    while frontier:
-      row, col = frontier.pop()
-      if (visited[row][col]):
-        continue
-      visited[row][col] = True
-      cell = m[row][col]
-      if cell & 0b1000 and m[row-1][col] & 0b0100:
-        frontier.append((row-1, col))
-      if cell & 0b0100 and m[row+1][col] & 0b1000:
-        frontier.append((row+1, col))
-      if cell & 0b0010 and m[row][col-1] & 0b0001:
-        frontier.append((row, col-1))
-      if cell & 0b0001 and m[row][col+1] & 0b0010:
-        frontier.append((row, col+1))
-    return np.sum(visited) == self.initial.board.side ** 2
+    # visited = [[False for _ in range(0, len(m))] for _ in range(0, len(m))]
+    # frontier = [(1,1)]
+    # while frontier:
+    #   row, col = frontier.pop()
+    #   if (visited[row][col]):
+    #     continue
+    #   visited[row][col] = True
+    #   cell = m[row][col]
+    #   if cell & 0b1000 and m[row-1][col] & 0b0100:
+    #     frontier.append((row-1, col))
+    #   if cell & 0b0100 and m[row+1][col] & 0b1000:
+    #     frontier.append((row+1, col))
+    #   if cell & 0b0010 and m[row][col-1] & 0b0001:
+    #     frontier.append((row, col-1))
+    #   if cell & 0b0001 and m[row][col+1] & 0b0010:
+    #     frontier.append((row, col+1))
+    # # return np.sum(visited) == self.initial.board.side ** 2
+    return state.board.moves == []
 
   def h(self, node: Node):
     """Função heuristica utilizada para a procura A*."""
