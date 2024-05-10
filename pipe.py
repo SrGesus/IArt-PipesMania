@@ -207,12 +207,9 @@ class Board:
         self.moves = []
         return
       self.matrix[i,j] = self.move_grid[i][j][0]
-    for i in range(1, self.side+1):
-      for j in range(1, self.side+1):
-        self.move_grid[i][j].pop(0)
           
     self.moves = [
-      (i, j, p) for i,j,p in self.moves if p in self.move_grid[i][j]
+      (i, j, p) for i,j,p in self.moves if p in self.move_grid[i][j][1:]
     ]
     del self.move_grid
 
@@ -221,7 +218,6 @@ class Board:
     """Lê o test do standard input (stdin) que é passado como argumento
     e retorna uma instância da classe Board.
     """
-
     matrix = []
     for line in sys.stdin:
       matrix.append([0]+[STR_TO_PIECE[x] for x in line.split()]+[0])
@@ -260,37 +256,7 @@ class PipeMania(Problem):
     """Retorna True se e só se o estado passado como argumento é
     um estado objetivo. Deve verificar se todas as posições do tabuleiro
     estão preenchidas de acordo com as regras do problema."""
-    # m: np.ndarray = state.board.matrix
-    # # print(m)
-    # shifted = m << 1
-    # vertical = shifted[:-1,] ^ m[1:,]
-    # vertical &= 0b1000
-    # if (np.any(vertical)):
-    #   return False
-    # horizontal = shifted[:,:-1] ^ m[:,1:]
-    # horizontal &= 0b0010
-    # if np.any(horizontal):
-    #   return False
-    # DFS that checks if all pieces are connected to (1,1)
-    # m = m.tolist()
-    # visited = [[False for _ in range(0, len(m))] for _ in range(0, len(m))]
-    # frontier = [(1,1)]
-    # while frontier:
-    #   row, col = frontier.pop()
-    #   if (visited[row][col]):
-    #     continue
-    #   visited[row][col] = True
-    #   cell = m[row][col]
-    #   if cell & 0b1000 and m[row-1][col] & 0b0100:
-    #     frontier.append((row-1, col))
-    #   if cell & 0b0100 and m[row+1][col] & 0b1000:
-    #     frontier.append((row+1, col))
-    #   if cell & 0b0010 and m[row][col-1] & 0b0001:
-    #     frontier.append((row, col-1))
-    #   if cell & 0b0001 and m[row][col+1] & 0b0010:
-    #     frontier.append((row, col+1))
-    # # return np.sum(visited) == self.initial.board.side ** 2
-    return state.board.moves == []
+    return len(state.board.moves) == 0
 
   def h(self, node: Node):
     """Função heuristica utilizada para a procura A*."""
@@ -316,7 +282,5 @@ class PipeMania(Problem):
 
 if __name__ == "__main__":
   prob = PipeMania(Board.parse_instance())
-  # prob.initial.print()
   sol = astar_search(prob)
   sol.state.print()
-  # print(PipeManiaState.state_id)
