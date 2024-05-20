@@ -85,7 +85,7 @@ class Board:
     else:
       self.move_grid: list = self.matrix[..., np.newaxis].tolist()
       for i, j, x in self.moves:
-        self.move_grid[i][j].append(x)
+        self.move_grid[i][j].extend(x)
 
   def prune_unit(self, visited: list, i, j) -> None:
     """For a given position prune the actions around it"""
@@ -181,10 +181,10 @@ class Board:
       for j in range(1, self.side+1):
         self.matrix[i,j] = self.move_grid[i][j][0]
     self.moves = [
-      (i, j, p)
+      (i, j, tuple(self.move_grid[i][j][1:]))
       for i in range(1, self.side+1)
-      for j in range(1, self.side+1) 
-      for p in self.move_grid[i][j][1:]
+      for j in range(1, self.side+1)
+      if len(self.move_grid[i][j][1:]) > 0
     ]
     del self.move_grid
 
@@ -206,9 +206,11 @@ class Board:
         self.moves = []
         return
       self.matrix[i,j] = self.move_grid[i][j][0]
-          
+
     self.moves = [
-      (i, j, p) for i,j,p in self.moves if p in self.move_grid[i][j][1:]
+      (i, j, tuple(self.move_grid[i][j][1:])) 
+      for i,j,_ in self.moves 
+      if len(self.move_grid[i][j][1:]) > 0
     ]
     del self.move_grid
 
@@ -233,9 +235,14 @@ class PipeMania(Problem):
   def actions(self, state: PipeManiaState):
     """Retorna uma lista de ações que podem ser executadas a
     partir do estado passado como argumento."""
-    for i, j, p in state.board.moves:
-      if state.board.matrix[i,j] != p:
+    # Sort moves based on whether 
+    # for i, j, ps in sorted(state.board.moves, key=lambda x: len(x[2])):
+    state.board.moves.sort(key=lambda x: len(x[2]))
+    for i, j, ps in state.board.moves:
+      for p in ps:
+      # if state.board.matrix[i,j] != p:
         yield (i,j,p)
+    del state.board.moves
 
   def result(self, state: PipeManiaState, action):
     """Retorna o estado resultante de executar a 'action' sobre
@@ -253,12 +260,21 @@ class PipeMania(Problem):
     """Retorna True se e só se o estado passado como argumento é
     um estado objetivo. Deve verificar se todas as posições do tabuleiro
     estão preenchidas de acordo com as regras do problema."""
-    return len(state.board.moves) == 0
-
-  def h(self, node: Node):
-    """Função heuristica utilizada para a procura A*."""
-    # DFS to find number of connected pieces to piece (1,1)
-    m = node.state.board.matrix.tolist()
+    m: np.ndarray = state.board.matrix
+    # print(m)
+    # shifted = m << 1
+    # vertical = shifted[:-1,] ^ m[1:,]
+    # vertical &= 0b1000
+    # if (np.any(vertical)):
+    #   return False
+    # horizontal = shifted[:,:-1] ^ m[:,1:]
+    # horizontal &= 0b0010
+    # if np.any(horizontal):
+    #   return False
+    if (state.h != 0):
+      return False
+    # DFS that checks if all pieces are connected to (1,1)
+    m = m.tolist()
     visited = [[False for _ in range(0, len(m))] for _ in range(0, len(m))]
     frontier = [(1,1)]
     while frontier:
@@ -275,9 +291,35 @@ class PipeMania(Problem):
         frontier.append((row, col-1))
       if cell & 0b0001 and m[row][col+1] & 0b0010:
         frontier.append((row, col+1))
-    return (node.state.board.side**2 - np.sum(visited))
+    return np.sum(visited) == self.initial.board.side ** 2
+
+  def h(self, node: Node):
+    """Função heuristica utilizada para a procura A*."""
+    # DFS to find number of connected pieces to piece (1,1)
+    node.state.h = len(node.state.board.moves)
+    return len(node.state.board.moves)
+    # m = node.state.board.matrix.tolist()
+    # visited = [[False for _ in range(0, len(m))] for _ in range(0, len(m))]
+    # frontier = [(1,1)]
+    # while frontier:
+    #   row, col = frontier.pop()
+    #   if (visited[row][col]):
+    #     continue
+    #   visited[row][col] = True
+    #   cell = m[row][col]
+    #   if cell & 0b1000 and m[row-1][col] & 0b0100:
+    #     frontier.append((row-1, col))
+    #   if cell & 0b0100 and m[row+1][col] & 0b1000:
+    #     frontier.append((row+1, col))
+    #   if cell & 0b0010 and m[row][col-1] & 0b0001:
+    #     frontier.append((row, col-1))
+    #   if cell & 0b0001 and m[row][col+1] & 0b0010:
+    #     frontier.append((row, col+1))
+    # node.state.board.h = node.state.board.side**2 - np.sum(visited)
+    # return node.state.board.h
 
 if __name__ == "__main__":
   prob = PipeMania(Board.parse_instance())
-  sol = astar_search(prob)
+  sol = greedy_search(prob)
   sol.state.print()
+
